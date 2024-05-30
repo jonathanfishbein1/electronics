@@ -43,4 +43,35 @@ suite =
 
                 else
                     Expect.fail "equivalent resistence wrong"
+        , Test.fuzz
+            (Fuzz.floatRange 1 10)
+            "tests equivalent capacitance"
+          <|
+            \capacitance ->
+                let
+                    circuit =
+                        MultiwayTree.Tree
+                            [ Electronics.Voltage 1.0
+                            ]
+                            [ MultiwayTree.Tree
+                                [ Electronics.Capacitor capacitance
+                                , Electronics.Capacitor capacitance
+                                , Electronics.Ground
+                                ]
+                                []
+                            , MultiwayTree.Tree
+                                [ Electronics.Capacitor capacitance
+                                , Electronics.Ground
+                                ]
+                                []
+                            ]
+
+                    rEqExpected =
+                        capacitance + (1 / ((1 / capacitance) + (1 / capacitance)))
+                in
+                if Electronics.calculateEquivalentCapacitance circuit == rEqExpected then
+                    Expect.pass
+
+                else
+                    Expect.fail "equivalent capacitance wrong"
         ]
