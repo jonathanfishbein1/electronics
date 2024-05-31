@@ -6,6 +6,7 @@ import Expect
 import Fuzz
 import MultiwayTree
 import Real
+import Resistance
 import Test
 
 
@@ -13,7 +14,7 @@ suite : Test.Test
 suite =
     Test.describe "Electronic tests"
         [ Test.fuzz
-            (Fuzz.floatRange 0 10)
+            (Fuzz.map Resistance.ohms (Fuzz.floatRange 0 10))
             "tests equivalent resistence"
           <|
             \resistence ->
@@ -36,7 +37,8 @@ suite =
                             ]
 
                     rEqExpected =
-                        1 / (1 / (2 * resistence) + (1 / resistence))
+                        Resistance.ohms
+                            (1 / (1 / (2 * Resistance.inOhms resistence) + (1 / Resistance.inOhms resistence)))
                 in
                 if Electronics.calculateEquivalentResistance circuit == rEqExpected then
                     Expect.pass

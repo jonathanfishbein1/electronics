@@ -7,11 +7,12 @@ module Electronics exposing
 
 import MultiwayTree
 import Real
+import Resistance
 
 
 type Component
     = Voltage Float
-    | Resistor Float
+    | Resistor Resistance.Resistance
     | Capacitor Float
     | Ground
 
@@ -20,7 +21,7 @@ type alias Circuit =
     MultiwayTree.Tree (List Component)
 
 
-calculateEquivalentResistance : Circuit -> Float
+calculateEquivalentResistance : Circuit -> Resistance.Resistance
 calculateEquivalentResistance =
     MultiwayTree.foldl
         (\section accumulator ->
@@ -30,21 +31,21 @@ calculateEquivalentResistance =
                         (\component sum ->
                             case component of
                                 Resistor r ->
-                                    sum + r
+                                    Resistance.ohms (Resistance.inOhms sum + Resistance.inOhms r)
 
                                 _ ->
                                     sum
                         )
-                        0.0
+                        (Resistance.ohms 0.0)
                         section
             in
-            if accumulator == 0 then
+            if accumulator == Resistance.ohms 0 then
                 resistorsEquivelent
 
             else
-                1 / ((1 / accumulator) + (1 / resistorsEquivelent))
+                Resistance.ohms (1 / ((1 / Resistance.inOhms accumulator) + (1 / Resistance.inOhms resistorsEquivelent)))
         )
-        0.0
+        (Resistance.ohms 0.0)
 
 
 calculateEquivalentCapacitance : Circuit -> Float
