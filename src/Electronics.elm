@@ -3,17 +3,21 @@ module Electronics exposing
     , Component(..)
     , calculateEquivalentCapacitance
     , calculateEquivalentResistance
+    , calculateCurrent
     )
 
+import Capacitance
 import MultiwayTree
 import Real
 import Resistance
-
+import Voltage
+import Current
 
 type Component
-    = Voltage Float
+    = Voltage Voltage.Voltage
     | Resistor Resistance.Resistance
-    | Capacitor Float
+    | Capacitor Capacitance.Capacitance
+    | Current Current.Current
     | Ground
 
 
@@ -48,7 +52,7 @@ calculateEquivalentResistance =
         (Resistance.ohms 0.0)
 
 
-calculateEquivalentCapacitance : Circuit -> Float
+calculateEquivalentCapacitance : Circuit -> Capacitance.Capacitance
 calculateEquivalentCapacitance =
     MultiwayTree.foldl
         (\section accumulator ->
@@ -58,18 +62,26 @@ calculateEquivalentCapacitance =
                         (\component sum ->
                             case component of
                                 Capacitor c ->
-                                    if sum == 0 then
+                                    if sum == Capacitance.farads 0 then
                                         c
 
                                     else
-                                        1 / (1 / sum + 1 / c)
+                                        Capacitance.farads (1 / (1 / Capacitance.inFarads sum + 1 / Capacitance.inFarads c))
 
                                 _ ->
                                     sum
                         )
-                        0.0
+                        (Capacitance.farads 0.0)
                         section
             in
-            accumulator + capacitorsEquivelent
+            Capacitance.farads (Capacitance.inFarads accumulator + Capacitance.inFarads capacitorsEquivelent)
         )
-        0.0
+        (Capacitance.farads 0.0)
+
+calculateCurrent : Circuit -> Component
+calculateCurrent circuit = 
+    case circuit of
+         ( MultiwayTree.Tree [Voltage v, Resistor r, Ground ] _) ->
+            Current (Current.amperes (Voltage.inVolts v / (Resistance.inOhms r)))
+         _ ->
+                Current (Current.amperes 1)  
